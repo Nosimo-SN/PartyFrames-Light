@@ -1,0 +1,9 @@
+/* Selected theme tokens from the installed SeverActions UI. */
+:root{--text-primary: #f0e4c9;--accent: #cba560;--font-display: "Sitka Heading", "Sitka Text", "Cambria", "Palatino Linotype", Georgia, serif;--font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif}
+:root{--sa-bg-2: #1f1913;--sa-rule-strong: rgba(201, 164, 92, .3)}
+:root[data-theme=tallow]{--text-primary: #f7e3bb;--accent: #e59a5e;--sa-bg-2: #211812;--sa-rule-strong: rgba(227, 152, 93, .3)}
+:root[data-theme=windhelm]{--text-primary: #dce6f0;--accent: #7cb2ce;--sa-bg-2: #121b25;--sa-rule-strong: rgba(122, 176, 205, .3)}
+:root[data-theme=dwemer]{--text-primary: #f3e2cf;--accent: #ec9660;--sa-bg-2: #071d1d;--sa-rule-strong: rgba(234, 149, 94, .3)}
+:root[data-theme=soulcairn]{--text-primary: #e8e3f0;--accent: #be9aef;--sa-bg-2: #1f1723;--sa-rule-strong: rgba(189, 153, 238, .3)}
+:root[data-theme=vellum]{--text-primary: #2b2014;--accent: #664603;--sa-bg-2: #e0d3b7;--sa-rule-strong: rgba(102, 70, 3, .42)}
+:root[data-theme=contrast]{--text-primary: #ffffff;--accent: #f8c948;--sa-bg-2: #141414;--sa-rule-strong: rgba(248, 201, 72, .85)}

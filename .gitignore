@@ -1,0 +1,13 @@
+/build/
+/build-*/
+/backups/
+/staged/
+/external/
+/vcpkg_installed/
+/README-VR.md
+/browser-cache/
+/dist/
+/verification/
+/vendor/
+/package/SKSE/Plugins/PartyLight.dll
+/docs/DEVELOPMENT-HISTORY.md

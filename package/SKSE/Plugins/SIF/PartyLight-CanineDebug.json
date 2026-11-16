@@ -1,0 +1,334 @@
+{
+  "rules": [
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogHungry",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogHungry": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogTired",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogTired": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity0",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity0": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity1",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity1": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity2",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity2": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity3",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity3": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity4",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity4": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity5",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity5": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity6",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity6": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity7",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity7": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity8",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity8": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity9",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity9": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity10",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity10": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivity11",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivity11": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "icon": {
+        "source": "PartyLight/canine-debug.swf",
+        "label": "PartyLightDogActivityOther",
+        "fadeStartDistance": 1200,
+        "fadeMaxDistance": 2200,
+        "maxInstances": 1
+      },
+      "match": {
+        "anyOf": [
+          {
+            "partyLightDogActivityOther": {}
+          },
+          {
+            "isDead": true,
+            "not": {
+              "isDead": true
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
