@@ -38,7 +38,7 @@ Optional integrations:
 | Canine Drives 0.26.6+, API v1 | Tracked dog's authoritative need warnings and published activities |
 | Status Indicator Framework – Floating Icons, API v1 | Optional overhead canine debugging icons; also requires Canine Drives |
 
-Install optional mods separately. Ordinary follower frames work without those native APIs. Some custom quest companions expose no standard follower state and may need a compatibility rule; every quest and follower framework has not been tested.
+Canine Drives is a soft requirement: without it, the normal follower HUD works and dog-specific indicators are unavailable. Install optional mods separately. Ordinary follower frames work without those native APIs. Some custom quest companions expose no standard follower state and may need a compatibility rule; every quest and follower framework has not been tested.
 
 **SE/AE only is offered here. VR is withheld pending a request and testing by someone with VR hardware.**
 
@@ -70,4 +70,4 @@ For a bug report, include your Skyrim and SKSE versions, integration versions, s
 
 See [BUILDING.md](https://github.com/Nosimo-SN/PartyFrames-Light/blob/main/docs/BUILDING.md). Source is GPL-3.0-or-later; third-party headers and libraries retain their own notices under `include/` and `package/SKSE/Plugins/PartyLight/Licenses/`.
 
-Thanks to Severause for Magelight UI and SeverActions, the Canine Drives API work, CommonLibSSE-NG contributors, and Status Indicator Framework. Inspired by compact party sheets; no Skyrim Party Sheet code or assets are included.
+Severause created Magelight UI and SeverActions. Thanks also to the CommonLibSSE-NG contributors and the creator of Status Indicator Framework.
