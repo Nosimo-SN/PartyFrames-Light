@@ -17,7 +17,16 @@ int main()
     Check({.severFlags=1},true,"Casual Sever follower qualifies");
     Check({.severFlags=1024,.engineFollowingPlayer=true,.playerTeammate=true},true,"Vanilla/framework follower tracked by Sever qualifies through engine link");
     Check({.severFlags=1024,.packageFollowingPlayer=true},true,"Quest follower tracked by Sever qualifies through live follow target");
-    Check({.playerTeammate=true},true,"Base game follower slot/quest teammate qualifies independently");
+    Check({.playerTeammate=true},false,"Quest teammate after its escort ends must not qualify alone");
+    Check({.engineFollowingPlayer=true,.playerTeammate=true},true,"Base game follower slot qualifies through its live engine link");
+    Check({.packageFollowingPlayer=true,.playerTeammate=true},true,"Active quest teammate qualifies through its player-targeted package");
+    Check({.severFlags=0,.playerTeammate=true},false,"Dismissed framework companion without Sever roster must not qualify through stale teammate state");
+    FollowerEvidence questEscort{.packageFollowingPlayer=true,.playerTeammate=true};
+    Check(questEscort,true,"Quest escort is shown while actively accompanying the player");
+    questEscort.packageFollowingPlayer=false;
+    Check(questEscort,false,"Quest escort disappears when its live follow package ends despite retained teammate flag");
+    questEscort.engineFollowingPlayer=true;
+    Check(questEscort,true,"Recruited former quest escort reappears with a live engine follower link");
     Check({.engineFollowingPlayer=true},true,"Quest follower without teammate flag qualifies through engine link");
     Check({.packageFollowingPlayer=true},true,"Quest escort/accompany package qualifies");
     Check({.severFlags=1025,.waiting=true,.engineFollowingPlayer=true,.playerTeammate=true},false,"Wait overrides stale follow state");
@@ -33,5 +42,5 @@ int main()
         HasSurvivalPenalty(100,0,true,true,false,false) || HasSurvivalPenalty(100,1,false,true,false,false) ||
         HasSurvivalPenalty(100,1,true,false,false,false) || HasSurvivalPenalty(100,1,true,true,true,false) ||
         HasSurvivalPenalty(100,1,true,true,false,true)) throw std::runtime_error("Survival icon threshold or disabled/excluded/bleedout gate failed");
-    std::cout<<"PASS: roster-only/home exclusions, active Sever followers, vanilla/framework followers, quest escorts and wait/hold vetoes\n";
+    std::cout<<"PASS: stale teammate/roster exclusions, quest escort lifecycle, active Sever and engine followers, camps and wait/hold vetoes\n";
 }

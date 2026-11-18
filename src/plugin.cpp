@@ -17,6 +17,7 @@ PartyLight::LoadState loadState;
 std::atomic_uint hotkey{66}, modifiers{1};
 json config;
 std::map<RE::FormID, RE::ActorHandle> tracked;
+std::set<RE::FormID> reportedFollowers;
 struct Portrait { std::uint64_t stamp{}; std::string data; std::uint32_t kind{}; };
 std::map<RE::FormID, Portrait> portraits;
 using VersionFn = std::uint32_t (*)();
@@ -158,17 +159,29 @@ bool IsActive(RE::Actor* actor, const std::set<RE::FormID>& following)
         .engineFollowingPlayer=following.contains(actor->GetFormID()),
         .playerTeammate=actor->IsPlayerTeammate()
     };
+    RE::FormID packageID{},targetID{};
     auto* process = actor->GetActorRuntimeData().currentProcess;
     if (process) {
         RE::BSSpinLockGuard lock(process->currentPackage.packageLock);
         auto* package = process->currentPackage.package;
+        packageID=package ? package->GetFormID():0;
         evidence.campSandbox=campSandbox && package==campSandbox;
         const auto target = process->currentPackage.target.get();
+        targetID=target ? target->GetFormID():0;
         if (package && target.get() == player &&
             (package->packData.packType.any(RE::PACKAGE_TYPE::kFollow,RE::PACKAGE_TYPE::kEscort,RE::PACKAGE_TYPE::kAccompany) ||
              package->procedureType.any(RE::PACKAGE_PROCEDURE_TYPE::kFollowWithEscort,RE::PACKAGE_PROCEDURE_TYPE::kFollowWithoutEscort,RE::PACKAGE_PROCEDURE_TYPE::kEscortActor,RE::PACKAGE_PROCEDURE_TYPE::kAccompany))) evidence.packageFollowingPlayer=true;
     }
-    return PartyLight::IsActivelyFollowing(evidence);
+    const bool active=PartyLight::IsActivelyFollowing(evidence);
+    const bool wasActive=reportedFollowers.contains(actor->GetFormID());
+    if(active!=wasActive) {
+        SKSE::log::info("Follower {}: {} [{:08X}]; severFlags={} waiting={} engineLink={} liveFollowPackage={} teammate={} camp={} package={:08X} target={:08X}",
+            active?"included":"removed",actor->GetDisplayFullName(),actor->GetFormID(),evidence.severFlags,evidence.waiting,
+            evidence.engineFollowingPlayer,evidence.packageFollowingPlayer,evidence.playerTeammate,evidence.campSandbox,packageID,targetID);
+        if(active) reportedFollowers.insert(actor->GetFormID());
+        else reportedFollowers.erase(actor->GetFormID());
+    }
+    return active;
 }
 void UpdatePortrait(RE::Actor* actor)
 {
@@ -210,7 +223,7 @@ void Tick()
     struct Complete { ~Complete() { pending = false; } } complete;
     if (!ready) return;
     if (loadState.ConsumeReset()) {
-        tracked.clear(); portraits.clear(); PartyLight::ResetSurvival(); PartyLight::ResetCanine(); toggleRequested=false;
+        tracked.clear(); portraits.clear(); reportedFollowers.clear(); PartyLight::ResetSurvival(); PartyLight::ResetCanine(); toggleRequested=false;
         mod.v4()->ShowView(hud,false);
         Send(hud,"partyReset",{}); Send(settings,"partyReset",{});
     }
@@ -247,7 +260,10 @@ void Tick()
         });
         for (auto it = tracked.begin(); it != tracked.end();) {
             auto a = it->second.get();
-            if (!a || !IsActive(a.get(),following)) { portraits.erase(it->first); it = tracked.erase(it); }
+            if (!a || !IsActive(a.get(),following)) {
+                if(reportedFollowers.erase(it->first)) SKSE::log::info("Follower removed: [{:08X}]; reference unavailable, dead, disabled, hostile or excluded summon",it->first);
+                portraits.erase(it->first); it = tracked.erase(it);
+            }
             else { UpdatePortrait(a.get()); ++it; }
         }
     }
@@ -354,7 +370,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
             });
         }
     }).detach();
-    SKSE::log::info("PartyFrames Light 0.4.2 ready; runtime {}; settings hotkey scancode {} modifiers {}",REL::Module::IsVR()?"VR":"SE/AE",hotkey.load(),modifiers.load());
+    SKSE::log::info("PartyFrames Light 0.4.3 ready; runtime {}; settings hotkey scancode {} modifiers {}",REL::Module::IsVR()?"VR":"SE/AE",hotkey.load(),modifiers.load());
 }
 }
 SKSEPluginLoad(const SKSE::LoadInterface* skse)

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.3 — active follower filtering fix
+
+- A player-teammate flag alone no longer qualifies any actor, including actors outside SeverActions' roster. Quest actors or dismissed companions can keep that flag after following ends.
+- Retains current SeverActions follow state, engine follower links, live player-targeted follow/escort/accompany packages, and the exact Hearth camping-package exception.
+- Logs inclusion/removal transitions with actor FormID, SeverActions flags, teammate/wait state, engine link, live package, camp state and package/target FormIDs.
+- Native regressions cover a quest escort ending while its teammate flag remains, plus recruitment afterward. This models the suspected failure; the reported Hadvar save has not been reproduced.
+
 ## 0.4.2 — PartyFrames Light, first public SE/AE package
 
 - Public name and settings title changed from PartyLight to PartyFrames Light.

@@ -10,7 +10,7 @@ A small follower HUD for **Skyrim Special Edition and Anniversary Edition**, bui
 
 ## Features
 
-- Shows actively following companions, including the vanilla follower slot and quest companions using standard follower state. SeverActions roster membership alone does not qualify.
+- Shows actively following companions, including the vanilla follower slot and quest companions using standard follower state. SeverActions roster membership or Skyrim teammate status alone does not qualify. A current SeverActions follow signal, engine follower link, live player-targeted follow/escort/accompany package or supported Hearth camp package is required.
 - Reads existing SeverActions portraits and follows its selected portrait-frame/font theme. A monogram appears when no portrait is available.
 - Move the party as a group or place individual cards. Change sizes, spacing, portrait visibility and numbers.
 - Limit rows and columns; extra cards are omitted. Minions and summons are optional.
@@ -60,7 +60,7 @@ For overhead debugging, enable **Hjalti overhead debug icons** under **Dog debug
 
 ## Testing and troubleshooting
 
-The developer's SE/AE game has exercised portraits, active follower filtering, camp visibility, direction arrows, settings sliders and a live Canine Drives API snapshot. Version 0.4.2 is the public-name/packaging revision. Its DLL builds, all three native regression suites pass, and browser checks cover layout, controls, overflow, canine activities and warning visibility. These checks do not establish compatibility with every runtime, quest or mod combination. Overhead positioning and live toggling remain unverified.
+The developer's SE/AE game has exercised portraits, active follower filtering, camp visibility, direction arrows, settings sliders and a live Canine Drives API snapshot. Version 0.4.3 removes the teammate-only fallback and adds follower inclusion/removal diagnostics. Its DLL builds and all three native regression suites pass, including an escort ending while its teammate flag remains. Existing browser checks cover layout, controls, overflow, canine activities and warning visibility; the UI is unchanged in 0.4.3. The reported Hadvar save has not been reproduced, so confirmation in that scenario is still needed. These checks do not establish compatibility with every runtime, quest or mod combination. Overhead positioning and live toggling remain unverified.
 
 If a frame is missing, confirm the actor is actively following or using the supported camp package. Waiting/home-rostered companions are intentionally excluded. Check row/column limits and the summons toggle. Another interior/worldspace displays **Elsewhere** because coordinates cannot be compared reliably.
 
