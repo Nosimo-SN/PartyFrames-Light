@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(PartyLight VERSION 0.4.3 LANGUAGES CXX)
+project(PartyLight VERSION 0.4.4 LANGUAGES CXX)
 set(PARTYLIGHT_RUNTIME "flatrim" CACHE STRING "Target runtime: flatrim or vr")
 set_property(CACHE PARTYLIGHT_RUNTIME PROPERTY STRINGS flatrim vr)
 set(COMMONLIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/CommonLibSSE-NG" CACHE PATH "alandtse CommonLibSSE-NG checkout")

@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const editing = document.body.classList.contains('editing');
-  const defaults = {enabled:true,x:.01,y:.4,scale:1,portraitSize:60,barWidth:88,barHeight:13,gap:12,portraits:true,numbers:true,horizontal:false,maxRows:4,maxColumns:2,showSummons:false,distance:true,overheadDebug:false,hotkey:66,shift:true,ctrl:false,alt:false,vrButton:7,vrModifier:2,vrHand:1,cards:{}};
+  const defaults = {enabled:true,x:.01,y:.4,scale:1,portraitSize:60,barWidth:88,barHeight:13,gap:12,portraits:true,numbers:true,horizontal:false,maxRows:4,maxColumns:2,showSummons:false,distance:true,overheadDebug:false,showCasualFollowers:false,hideDistantCasualFollowers:true,casualFollowerRange:100,onlySeverCompanions:false,hotkey:66,shift:true,ctrl:false,alt:false,vrButton:7,vrModifier:2,vrHand:1,cards:{}};
   const clone = value => JSON.parse(JSON.stringify(value));
   let config = clone(defaults), actors = [], selected = '', drag = null, saveTimer, sliderActive=false, pendingControls=false, vrRuntime=false;
   const images = new Map(), root = document.getElementById('party');
@@ -228,6 +228,12 @@
     section('Party layout');checkbox('enabled','Show follower HUD');checkbox('portraits','Show portraits');checkbox('numbers','Show current / maximum');checkbox('horizontal','Fill across before down');checkbox('showSummons','Show minions and summons');checkbox('distance','Show distance and direction');
     range('maxRows','Maximum vertical cards',1,12,1);range('maxColumns','Maximum horizontal cards',1,12,1);
     range('scale','Overall size',.5,3,.05);range('portraitSize','Portrait size',24,140,1);range('barWidth','Bar width',55,240,1);range('barHeight','Bar height',8,28,1);range('gap','Card spacing',0,80,1);
+    section('Follower selection');
+    checkbox('onlySeverCompanions','Only active SeverActions companions');
+    checkbox('showCasualFollowers','Show SeverActions casual followers');
+    checkbox('hideDistantCasualFollowers','Hide casual followers beyond range');
+    range('casualFollowerRange','Casual follower range (metres)',10,500,10);
+    parent.append(make('p','hint','Casual followers default off. Their distance limit defaults on at 100 m; unloaded actors and other interiors/worldspaces are outside range. Only active SeverActions companions overrides casual followers, independent vanilla/quest followers and summons. Recruited companions at camp remain eligible. Changes apply on the next follower scan.'));
     if(!vrRuntime) {
       section('Dog debugging');checkbox('overheadDebug','Hjalti overhead debug icons');
       parent.append(make('p','hint','Optional Status Indicator Framework icons above Hjalti: hunger, tiredness and current activity. Off by default.'));

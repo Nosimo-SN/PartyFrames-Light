@@ -121,6 +121,29 @@ const actors = [member(1,'Celestine','Celestine.esp:000800'),member(2,'Hjalti','
   await page.waitForTimeout(250);
   saved=await page.evaluate(()=>window.sent.filter(m=>m.name==='partySave').at(-1).value);
   assert(saved.scale>2.5);
+  // Existing settings files without new keys pick up the documented defaults.
+  await page.evaluate(config=>{
+    const legacy={...config};
+    for(const key of ['showCasualFollowers','hideDistantCasualFollowers','casualFollowerRange','onlySeverCompanions']) delete legacy[key];
+    window.partyConfig(JSON.stringify(legacy));
+  },config);
+  const casualToggle=page.locator('.control').filter({hasText:'Show SeverActions casual followers'}).locator('input');
+  const casualLimit=page.locator('.control').filter({hasText:'Hide casual followers beyond range'}).locator('input');
+  const onlySever=page.locator('.control').filter({hasText:'Only active SeverActions companions'}).locator('input');
+  const casualRange=page.locator('.control').filter({hasText:'Casual follower range (metres)'}).locator('input');
+  assert.equal(await casualToggle.isChecked(),false);
+  assert.equal(await casualLimit.isChecked(),true);
+  assert.equal(await onlySever.isChecked(),false);
+  assert.equal(await casualRange.inputValue(),'100');
+  await casualToggle.check();await casualLimit.uncheck();await onlySever.check();
+  await casualRange.fill('200');await casualRange.dispatchEvent('input');
+  await page.waitForTimeout(250);
+  saved=await page.evaluate(()=>window.sent.filter(m=>m.name==='partySave').at(-1).value);
+  assert.equal(saved.showCasualFollowers,true);
+  assert.equal(saved.hideDistantCasualFollowers,false);
+  assert.equal(saved.onlySeverCompanions,true);
+  assert.equal(saved.casualFollowerRange,200);
+  await page.screenshot({path:path.join(root,'verification/follower-settings.png')});
   await page.evaluate(()=>window.partyRuntime(JSON.stringify({vr:true})));
   assert.equal(await page.getByText('VR settings shortcut',{exact:true}).count(),1);
   assert.equal(await page.getByText('Keyboard fallback',{exact:true}).count(),1);

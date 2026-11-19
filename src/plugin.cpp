@@ -17,7 +17,13 @@ PartyLight::LoadState loadState;
 std::atomic_uint hotkey{66}, modifiers{1};
 json config;
 std::map<RE::FormID, RE::ActorHandle> tracked;
-std::set<RE::FormID> reportedFollowers;
+struct FollowerObservation {
+    PartyLight::FollowerEvidence evidence;
+    PartyLight::FollowerDecision decision;
+    RE::FormID package{},target{};
+    bool operator==(const FollowerObservation&) const = default;
+};
+std::map<RE::FormID,FollowerObservation> followerObservations;
 struct Portrait { std::uint64_t stamp{}; std::string data; std::uint32_t kind{}; };
 std::map<RE::FormID, Portrait> portraits;
 using VersionFn = std::uint32_t (*)();
@@ -47,17 +53,18 @@ json Defaults()
     return {{"enabled",true},{"x",0.01},{"y",0.4},{"scale",1.0},{"portraitSize",60},
         {"barWidth",88},{"barHeight",13},{"gap",12},{"portraits",true},{"numbers",true},
         {"horizontal",false},{"maxRows",4},{"maxColumns",2},{"showSummons",false},{"distance",true},{"overheadDebug",false},
+        {"showCasualFollowers",false},{"hideDistantCasualFollowers",true},{"casualFollowerRange",100.0},{"onlySeverCompanions",false},
         {"hotkey",66},{"shift",true},{"ctrl",false},{"alt",false},
         {"vrButton",7},{"vrModifier",2},{"vrHand",1},{"cards",json::object()}};
 }
 json Validate(const json& input)
 {
     auto out = Defaults();
-    for (auto key : {"enabled","portraits","numbers","horizontal","shift","ctrl","alt","showSummons","distance","overheadDebug"})
+    for (auto key : {"enabled","portraits","numbers","horizontal","shift","ctrl","alt","showSummons","distance","overheadDebug","showCasualFollowers","hideDistantCasualFollowers","onlySeverCompanions"})
         if (input.contains(key) && input[key].is_boolean()) out[key] = input[key];
     for (auto [key, low, high] : std::initializer_list<std::tuple<const char*,double,double>>{
         {"x",0,0.98},{"y",0,0.98},{"scale",0.5,3},{"portraitSize",24,140},
-        {"barWidth",55,240},{"barHeight",8,28},{"gap",0,80},{"hotkey",1,237},{"maxRows",1,12},{"maxColumns",1,12}}) {
+        {"barWidth",55,240},{"barHeight",8,28},{"gap",0,80},{"hotkey",1,237},{"maxRows",1,12},{"maxColumns",1,12},{"casualFollowerRange",10,500}}) {
         if (input.contains(key) && input[key].is_number()) {
             double v = input[key].get<double>();
             if (std::isfinite(v)) out[key] = std::clamp(v,low,high);
@@ -90,8 +97,18 @@ void Send(ML::ViewId view, const char* channel, const json& payload)
 {
     mod.v4()->InteropCall(view, channel, payload.dump(-1,' ',false,json::error_handler_t::replace).c_str());
 }
+void LogSettings()
+{
+    static std::string previous;
+    auto effective=config.dump(-1,' ',false,json::error_handler_t::replace);
+    if(effective!=previous) {
+        SKSE::log::info("Effective settings: {}",effective);
+        previous=std::move(effective);
+    }
+}
 void PublishConfig(bool includeSettings=true)
 {
+    LogSettings();
     hotkey = config["hotkey"].get<unsigned>();
     modifiers = (config["shift"].get<bool>() ? 1u : 0u) | (config["ctrl"].get<bool>() ? 2u : 0u) | (config["alt"].get<bool>() ? 4u : 0u);
     Send(hud,"partyConfig",config);
@@ -146,25 +163,43 @@ std::string StableKey(RE::Actor* actor)
 }
 bool IsActive(RE::Actor* actor, const std::set<RE::FormID>& following)
 {
-    if (!actor || actor->IsPlayerRef() || actor->IsDead() || actor->IsDisabled()) return false;
+    if (!actor || actor->IsPlayerRef()) return false;
+    const auto excluded=[&](const char* reason) {
+        if(followerObservations.erase(actor->GetFormID()))
+            SKSE::log::info("Follower excluded: {} [{:08X}]; state={}",actor->GetDisplayFullName(),actor->GetFormID(),reason);
+        return false;
+    };
+    if(actor->IsDead()) return excluded("dead");
+    if(actor->IsDisabled()) return excluded("disabled");
     auto* player = RE::PlayerCharacter::GetSingleton();
-    if (!player || actor->IsHostileToActor(player)) return false;
+    if (!player) return false;
+    if(actor->IsHostileToActor(player)) return excluded("hostile-to-player");
     const auto commander=actor->GetCommandingActor();
     const bool minion=actor->IsSummonedByPlayer() || (actor->IsCommandedActor() && commander.get()==player);
-    if(minion) return config.value("showSummons",false);
     auto flags = busy ? busy(actor->GetFormID()) : 0;
+    const PartyLight::FollowerOptions options{config.value("showCasualFollowers",false),config.value("hideDistantCasualFollowers",true),config.value("onlySeverCompanions",false),config.value("showSummons",false)};
     PartyLight::FollowerEvidence evidence{
         .severFlags=flags,
         .waiting=actor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kWaitingForPlayer)!=0.0f,
         .engineFollowingPlayer=following.contains(actor->GetFormID()),
-        .playerTeammate=actor->IsPlayerTeammate()
+        .playerTeammate=actor->IsPlayerTeammate(),
+        .playerMinion=minion
     };
+    if((flags&1u) && !(flags&1024u)) {
+        auto* actorCell=actor->GetParentCell();auto* playerCell=player->GetParentCell();
+        const bool sharedSpace=actorCell && playerCell && (actorCell==playerCell ||
+            (!actorCell->IsInteriorCell() && !playerCell->IsInteriorCell() && actor->GetWorldspace() && actor->GetWorldspace()==player->GetWorldspace()));
+        const float meters=sharedSpace?(actor->GetPosition()-player->GetPosition()).Length()/70.f:-1.f;
+        evidence.casualInRange=PartyLight::IsCasualInRange(sharedSpace,actor->Is3DLoaded(),meters,config["casualFollowerRange"].get<float>());
+    }
     RE::FormID packageID{},targetID{};
+    std::string packagePlugin;
     auto* process = actor->GetActorRuntimeData().currentProcess;
     if (process) {
         RE::BSSpinLockGuard lock(process->currentPackage.packageLock);
         auto* package = process->currentPackage.package;
         packageID=package ? package->GetFormID():0;
+        if(package) if(auto* file=package->GetFile(0)) packagePlugin=file->fileName;
         evidence.campSandbox=campSandbox && package==campSandbox;
         const auto target = process->currentPackage.target.get();
         targetID=target ? target->GetFormID():0;
@@ -172,16 +207,21 @@ bool IsActive(RE::Actor* actor, const std::set<RE::FormID>& following)
             (package->packData.packType.any(RE::PACKAGE_TYPE::kFollow,RE::PACKAGE_TYPE::kEscort,RE::PACKAGE_TYPE::kAccompany) ||
              package->procedureType.any(RE::PACKAGE_PROCEDURE_TYPE::kFollowWithEscort,RE::PACKAGE_PROCEDURE_TYPE::kFollowWithoutEscort,RE::PACKAGE_PROCEDURE_TYPE::kEscortActor,RE::PACKAGE_PROCEDURE_TYPE::kAccompany))) evidence.packageFollowingPlayer=true;
     }
-    const bool active=PartyLight::IsActivelyFollowing(evidence);
-    const bool wasActive=reportedFollowers.contains(actor->GetFormID());
-    if(active!=wasActive) {
-        SKSE::log::info("Follower {}: {} [{:08X}]; severFlags={} waiting={} engineLink={} liveFollowPackage={} teammate={} camp={} package={:08X} target={:08X}",
-            active?"included":"removed",actor->GetDisplayFullName(),actor->GetFormID(),evidence.severFlags,evidence.waiting,
-            evidence.engineFollowingPlayer,evidence.packageFollowingPlayer,evidence.playerTeammate,evidence.campSandbox,packageID,targetID);
-        if(active) reportedFollowers.insert(actor->GetFormID());
-        else reportedFollowers.erase(actor->GetFormID());
+    const auto decision=PartyLight::ClassifyFollower(evidence,options);
+    const FollowerObservation observation{evidence,decision,packageID,targetID};
+    const auto previous=followerObservations.find(actor->GetFormID());
+    const bool candidate=flags&1025u || evidence.engineFollowingPlayer || evidence.packageFollowingPlayer || evidence.playerTeammate || evidence.campSandbox || minion;
+    if(candidate || previous!=followerObservations.end()) {
+        if(previous==followerObservations.end() || previous->second!=observation) {
+            const char* membership=(flags&1024u)?"sever-recruited":(flags&1u)?"sever-casual":"not-established-by-sever-api";
+            SKSE::log::info("Follower {}: {} [{:08X}]; state={} membership={} severFlags={} waiting={} engineLink={} liveFollowPackage={} teammate={} camp={} casualInRange={} package={:08X} packagePlugin={} target={:08X}",
+                decision.included?"included":"excluded",actor->GetDisplayFullName(),actor->GetFormID(),PartyLight::FollowerStateName(decision.state),membership,evidence.severFlags,evidence.waiting,
+                evidence.engineFollowingPlayer,evidence.packageFollowingPlayer,evidence.playerTeammate,evidence.campSandbox,evidence.casualInRange,packageID,packagePlugin.empty()?"unknown":packagePlugin,targetID);
+        }
+        if(!candidate) followerObservations.erase(actor->GetFormID());
+        else followerObservations.insert_or_assign(actor->GetFormID(),observation);
     }
-    return active;
+    return decision.included;
 }
 void UpdatePortrait(RE::Actor* actor)
 {
@@ -223,7 +263,7 @@ void Tick()
     struct Complete { ~Complete() { pending = false; } } complete;
     if (!ready) return;
     if (loadState.ConsumeReset()) {
-        tracked.clear(); portraits.clear(); reportedFollowers.clear(); PartyLight::ResetSurvival(); PartyLight::ResetCanine(); toggleRequested=false;
+        tracked.clear(); portraits.clear(); followerObservations.clear(); PartyLight::ResetSurvival(); PartyLight::ResetCanine(); toggleRequested=false;
         mod.v4()->ShowView(hud,false);
         Send(hud,"partyReset",{}); Send(settings,"partyReset",{});
     }
@@ -261,7 +301,9 @@ void Tick()
         for (auto it = tracked.begin(); it != tracked.end();) {
             auto a = it->second.get();
             if (!a || !IsActive(a.get(),following)) {
-                if(reportedFollowers.erase(it->first)) SKSE::log::info("Follower removed: [{:08X}]; reference unavailable, dead, disabled, hostile or excluded summon",it->first);
+                if(!a) {
+                    if(followerObservations.erase(it->first)) SKSE::log::info("Follower excluded: [{:08X}]; state=reference-unavailable",it->first);
+                }
                 portraits.erase(it->first); it = tracked.erase(it);
             }
             else { UpdatePortrait(a.get()); ++it; }
@@ -370,7 +412,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
             });
         }
     }).detach();
-    SKSE::log::info("PartyFrames Light 0.4.3 ready; runtime {}; settings hotkey scancode {} modifiers {}",REL::Module::IsVR()?"VR":"SE/AE",hotkey.load(),modifiers.load());
+    SKSE::log::info("PartyFrames Light 0.4.4 ready; runtime {}; settings hotkey scancode {} modifiers {}",REL::Module::IsVR()?"VR":"SE/AE",hotkey.load(),modifiers.load());
 }
 }
 SKSEPluginLoad(const SKSE::LoadInterface* skse)

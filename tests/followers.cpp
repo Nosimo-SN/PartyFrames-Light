@@ -2,6 +2,7 @@
 #include "SurvivalPolicy.h"
 #include <iostream>
 #include <stdexcept>
+#include <limits>
 using PartyLight::FollowerEvidence;
 using PartyLight::IsActivelyFollowing;
 void Check(FollowerEvidence evidence, bool expected, const char* label)
@@ -14,7 +15,53 @@ int main()
     Check({.severFlags=1024},false,"Sever roster alone must not qualify");
     Check({.severFlags=1024,.playerTeammate=true},false,"Home roster companion retaining teammate/faction state must not qualify");
     Check({.severFlags=1025,.playerTeammate=true},true,"Actively led Sever companion qualifies");
-    Check({.severFlags=1},true,"Casual Sever follower qualifies");
+    Check({.severFlags=1},false,"Casual Sever follower is not a recruited party member");
+    const FollowerEvidence houseCat{.severFlags=1,.engineFollowingPlayer=true};
+    Check(houseCat,false,"Reported House Cat: casual follow cannot qualify through engine link");
+    Check({.severFlags=1,.engineFollowingPlayer=true,.packageFollowingPlayer=true,.playerTeammate=true,.campSandbox=true},false,"Casual veto precedes every shared follow and camp signal");
+    if(PartyLight::ClassifyFollower(houseCat).state!=PartyLight::FollowerState::SeverCasual)
+        throw std::runtime_error("Cat diagnostic must identify casual, not engine following");
+    auto recruitedCat=houseCat;recruitedCat.severFlags=1025;
+    Check(recruitedCat,true,"Recruiting an animal admits it without a species blacklist");
+    if(PartyLight::ClassifyFollower(recruitedCat).state!=PartyLight::FollowerState::SeverRecruited)
+        throw std::runtime_error("Recruitment changes the diagnostic state");
+    if(PartyLight::ClassifyFollower({.engineFollowingPlayer=true,.packageFollowingPlayer=true}).state!=PartyLight::FollowerState::EngineFollowing)
+        throw std::runtime_error("Non-SA engine following is not evidence of SA recruitment");
+    using PartyLight::ClassifyFollower;
+    using PartyLight::FollowerOptions;
+    auto casual=houseCat;casual.casualInRange=true;
+    const FollowerOptions showCasual{.showCasual=true};
+    if(!ClassifyFollower(casual,showCasual).included) throw std::runtime_error("Enabled casual inside range must show");
+    casual.casualInRange=false;
+    if(ClassifyFollower(casual,showCasual).state!=PartyLight::FollowerState::CasualOutOfRange) throw std::runtime_error("Enabled casual outside range must hide by default");
+    if(!ClassifyFollower(casual,{.showCasual=true,.hideDistantCasual=false}).included) throw std::runtime_error("Disabling range allows a far or unloaded casual");
+    casual.waiting=true;
+    if(ClassifyFollower(casual,{.showCasual=true,.hideDistantCasual=false}).included) throw std::runtime_error("Casual options must not bypass waiting");
+    casual.waiting=false;casual.severFlags=9;
+    if(ClassifyFollower(casual,{.showCasual=true,.hideDistantCasual=false}).included) throw std::runtime_error("Casual options must not bypass custody");
+    const FollowerOptions onlySever{.showCasual=true,.hideDistantCasual=false,.onlySeverCompanions=true};
+    if(ClassifyFollower(houseCat,onlySever).state!=PartyLight::FollowerState::OnlySeverCompanions ||
+       ClassifyFollower({.engineFollowingPlayer=true},onlySever).included ||
+       ClassifyFollower({.packageFollowingPlayer=true},onlySever).included ||
+       ClassifyFollower({.severFlags=1024},onlySever).included)
+        throw std::runtime_error("Companions-only overrides casual options and excludes independent followers and inactive roster members");
+    if(!ClassifyFollower(recruitedCat,onlySever).included ||
+       !ClassifyFollower({.severFlags=1024,.engineFollowingPlayer=true},onlySever).included ||
+       !ClassifyFollower({.severFlags=1026,.waiting=true,.campSandbox=true},onlySever).included)
+        throw std::runtime_error("Companions-only keeps recruited active, framework-led and camp companions");
+    if(!ClassifyFollower(recruitedCat,showCasual).included) throw std::runtime_error("Casual range must not apply to recruited companions");
+    if(ClassifyFollower({.playerMinion=true},{.onlySeverCompanions=true,.showSummons=true}).included ||
+       ClassifyFollower({.severFlags=1024,.playerMinion=true},{.onlySeverCompanions=true,.showSummons=true}).included ||
+       ClassifyFollower({.severFlags=1,.playerMinion=true},{.showSummons=true}).included ||
+       !ClassifyFollower({.playerMinion=true},{.showSummons=true}).included ||
+       ClassifyFollower({.playerMinion=true}).included)
+        throw std::runtime_error("Summons must respect companions-only and casual visibility precedence");
+    using PartyLight::IsCasualInRange;
+    if(!IsCasualInRange(true,true,100,100) || IsCasualInRange(true,true,100.01f,100) ||
+       IsCasualInRange(false,true,1,100) || IsCasualInRange(true,false,1,100) ||
+       IsCasualInRange(true,true,-1,100) || IsCasualInRange(true,true,std::numeric_limits<float>::quiet_NaN(),100) ||
+       IsCasualInRange(true,true,std::numeric_limits<float>::infinity(),100))
+        throw std::runtime_error("Casual range boundary, unknown space, unloaded or invalid distance failed");
     Check({.severFlags=1024,.engineFollowingPlayer=true,.playerTeammate=true},true,"Vanilla/framework follower tracked by Sever qualifies through engine link");
     Check({.severFlags=1024,.packageFollowingPlayer=true},true,"Quest follower tracked by Sever qualifies through live follow target");
     Check({.playerTeammate=true},false,"Quest teammate after its escort ends must not qualify alone");
