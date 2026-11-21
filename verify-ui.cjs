@@ -124,7 +124,7 @@ const actors = [member(1,'Celestine','Celestine.esp:000800'),member(2,'Hjalti','
   // Existing settings files without new keys pick up the documented defaults.
   await page.evaluate(config=>{
     const legacy={...config};
-    for(const key of ['showCasualFollowers','hideDistantCasualFollowers','casualFollowerRange','onlySeverCompanions']) delete legacy[key];
+    for(const key of ['showCasualFollowers','hideDistantCasualFollowers','casualFollowerRange','onlySeverCompanions','excludeHorses']) delete legacy[key];
     window.partyConfig(JSON.stringify(legacy));
   },config);
   const casualToggle=page.locator('.control').filter({hasText:'Show SeverActions casual followers'}).locator('input');
@@ -135,6 +135,9 @@ const actors = [member(1,'Celestine','Celestine.esp:000800'),member(2,'Hjalti','
   assert.equal(await casualLimit.isChecked(),true);
   assert.equal(await onlySever.isChecked(),false);
   assert.equal(await casualRange.inputValue(),'100');
+  const horses=page.locator('.control').filter({hasText:'Exclude horses'}).locator('input');
+  assert.equal(await horses.isChecked(),true);
+  await horses.uncheck();
   await casualToggle.check();await casualLimit.uncheck();await onlySever.check();
   await casualRange.fill('200');await casualRange.dispatchEvent('input');
   await page.waitForTimeout(250);
@@ -143,6 +146,7 @@ const actors = [member(1,'Celestine','Celestine.esp:000800'),member(2,'Hjalti','
   assert.equal(saved.hideDistantCasualFollowers,false);
   assert.equal(saved.onlySeverCompanions,true);
   assert.equal(saved.casualFollowerRange,200);
+  assert.equal(saved.excludeHorses,false);
   await page.screenshot({path:path.join(root,'verification/follower-settings.png')});
   await page.evaluate(()=>window.partyRuntime(JSON.stringify({vr:true})));
   assert.equal(await page.getByText('VR settings shortcut',{exact:true}).count(),1);

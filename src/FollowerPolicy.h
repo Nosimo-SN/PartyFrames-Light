@@ -19,18 +19,20 @@ struct FollowerEvidence {
     bool casualInRange{};
     bool playerMinion{};
     bool excludedObservationPackage{};
+    bool horse{};
     bool operator==(const FollowerEvidence&) const = default;
 };
 enum class FollowerState {
     NotFollowing, SeverCasual, Camp, Waiting, SeverHeld, SeverRecruited,
     EngineFollowing, PackageFollowing, TeammateOnly, SeverRosterOnly, SummonShown, SummonHidden,
-    CasualShown, CasualOutOfRange, OnlySeverCompanions, KnownObservationPackage
+    CasualShown, CasualOutOfRange, OnlySeverCompanions, KnownObservationPackage, HorseExcluded
 };
 struct FollowerOptions {
     bool showCasual{};
     bool hideDistantCasual{true};
     bool onlySeverCompanions{};
     bool showSummons{};
+    bool excludeHorses{true};
 };
 constexpr bool IsCasualInRange(bool sharedSpace, bool loaded, float meters, float limit) noexcept
 {
@@ -59,6 +61,7 @@ constexpr const char* FollowerStateName(FollowerState state) noexcept
     case FollowerState::CasualOutOfRange: return "sever-casual-out-of-range-or-unavailable";
     case FollowerState::OnlySeverCompanions: return "only-sever-companions-not-recruited";
     case FollowerState::KnownObservationPackage: return "excluded-suspicious-city-guards-observation-package";
+    case FollowerState::HorseExcluded: return "horse-excluded-by-setting";
     default: return "no-active-follow-signal";
     }
 }
@@ -68,6 +71,7 @@ constexpr FollowerDecision ClassifyFollower(const FollowerEvidence& evidence, Fo
     constexpr std::uint32_t severFollowPackage = 1u;
     constexpr std::uint32_t severRoster = 1024u;
     constexpr std::uint32_t custody = 8u|16u|32u|64u;
+    if(evidence.horse && options.excludeHorses) return {FollowerState::HorseExcluded,false};
     if(evidence.excludedObservationPackage) return {FollowerState::KnownObservationPackage,false};
     const bool casual=(evidence.severFlags & severFollowPackage) && !(evidence.severFlags & severRoster);
     if(options.onlySeverCompanions && !(evidence.severFlags & severRoster))

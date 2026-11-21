@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const editing = document.body.classList.contains('editing');
-  const defaults = {enabled:true,x:.01,y:.4,scale:1,portraitSize:60,barWidth:88,barHeight:13,gap:12,portraits:true,numbers:true,horizontal:false,maxRows:4,maxColumns:2,showSummons:false,distance:true,overheadDebug:false,showCasualFollowers:false,hideDistantCasualFollowers:true,casualFollowerRange:100,onlySeverCompanions:false,hotkey:66,shift:true,ctrl:false,alt:false,vrButton:7,vrModifier:2,vrHand:1,cards:{}};
+  const defaults = {enabled:true,x:.01,y:.4,scale:1,portraitSize:60,barWidth:88,barHeight:13,gap:12,portraits:true,numbers:true,horizontal:false,maxRows:4,maxColumns:2,showSummons:false,distance:true,overheadDebug:false,showCasualFollowers:false,hideDistantCasualFollowers:true,casualFollowerRange:100,onlySeverCompanions:false,excludeHorses:true,hotkey:66,shift:true,ctrl:false,alt:false,vrButton:7,vrModifier:2,vrHand:1,cards:{}};
   const clone = value => JSON.parse(JSON.stringify(value));
   let config = clone(defaults), actors = [], selected = '', drag = null, saveTimer, sliderActive=false, pendingControls=false, vrRuntime=false;
   const images = new Map(), root = document.getElementById('party');
@@ -229,6 +229,7 @@
     range('maxRows','Maximum vertical cards',1,12,1);range('maxColumns','Maximum horizontal cards',1,12,1);
     range('scale','Overall size',.5,3,.05);range('portraitSize','Portrait size',24,140,1);range('barWidth','Bar width',55,240,1);range('barHeight','Bar height',8,28,1);range('gap','Card spacing',0,80,1);
     section('Follower selection');
+    checkbox('excludeHorses','Exclude horses');
     checkbox('onlySeverCompanions','Only active SeverActions companions');
     checkbox('showCasualFollowers','Show SeverActions casual followers');
     checkbox('hideDistantCasualFollowers','Hide casual followers beyond range');

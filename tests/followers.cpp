@@ -37,6 +37,14 @@ int main()
     Check(observer,false,"Known surveillance task vetoes other admission paths");
     observer.excludedObservationPackage=false;
     Check(observer,true,"Same recruited actor remains eligible outside the observation task");
+    FollowerEvidence horse{.severFlags=1025,.engineFollowingPlayer=true,.packageFollowingPlayer=true,.playerTeammate=true,.campSandbox=true,.casualInRange=true,.playerMinion=true,.horse=true};
+    if(PartyLight::ClassifyFollower(horse,{.showCasual=true,.showSummons=true}).state!=PartyLight::FollowerState::HorseExcluded)
+        throw std::runtime_error("Default horse exclusion must precede all admission paths");
+    if(!PartyLight::ClassifyFollower(horse,{.showSummons=true,.excludeHorses=false}).included)
+        throw std::runtime_error("Turning off horse exclusion restores normal follower rules");
+    if(PartyLight::ClassifyFollower({.horse=true},{.excludeHorses=false}).included)
+        throw std::runtime_error("Horse opt-in must not make ownership or species a follow signal");
+    Check({.engineFollowingPlayer=true,.horse=false},true,"Other animal followers are unaffected by horse exclusion");
     Check({},false,"Nearby NPC is not a follower");
     Check({.severFlags=1024},false,"Sever roster alone must not qualify");
     Check({.severFlags=1024,.playerTeammate=true},false,"Home roster companion retaining teammate/faction state must not qualify");

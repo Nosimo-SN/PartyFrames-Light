@@ -17,6 +17,7 @@
   "hideDistantCasualFollowers": true,
   "casualFollowerRange": 100,
   "onlySeverCompanions": false,
+  "excludeHorses": true,
   "distance": true,
   "overheadDebug": false,
   "hotkey": 66,

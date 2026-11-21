@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.6 — default-on horse exclusion
+
+- Adds **Exclude horses** under Follower selection, on by default, including when an older settings file lacks the key. Uses Skyrim's built-in horse-keyword classification; modded horses carrying that keyword are covered too.
+- Horse exclusion precedes all follower, casual, camp and summon admission paths. Turning it off restores ordinary follower checks; ownership alone still does not qualify a horse.
+- Effective-settings logs include `excludeHorses`; candidate diagnostics include `horse` and the explicit `horse-excluded-by-setting` reason.
+- All three native suites and browser checks pass, including exclusion precedence, opt-out behavior, legacy settings defaults and checkbox persistence. In-game testing remains pending.
+
 ## 0.4.5 — surveillance package compatibility and exact package checks
 
 - Excludes `0012CC:suspiciouscityguards.esp` (`SCGobservePack`) while it is the actor's current package. The observation quest assigns this player-targeted follow/watch task to its Observer alias; this is not recruitment. The exclusion precedes engine/package admission, so the reported guard's engine link cannot bypass it. Other packages on the same actor remain eligible normally.

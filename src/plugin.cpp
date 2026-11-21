@@ -55,14 +55,14 @@ json Defaults()
     return {{"enabled",true},{"x",0.01},{"y",0.4},{"scale",1.0},{"portraitSize",60},
         {"barWidth",88},{"barHeight",13},{"gap",12},{"portraits",true},{"numbers",true},
         {"horizontal",false},{"maxRows",4},{"maxColumns",2},{"showSummons",false},{"distance",true},{"overheadDebug",false},
-        {"showCasualFollowers",false},{"hideDistantCasualFollowers",true},{"casualFollowerRange",100.0},{"onlySeverCompanions",false},
+        {"showCasualFollowers",false},{"hideDistantCasualFollowers",true},{"casualFollowerRange",100.0},{"onlySeverCompanions",false},{"excludeHorses",true},
         {"hotkey",66},{"shift",true},{"ctrl",false},{"alt",false},
         {"vrButton",7},{"vrModifier",2},{"vrHand",1},{"cards",json::object()}};
 }
 json Validate(const json& input)
 {
     auto out = Defaults();
-    for (auto key : {"enabled","portraits","numbers","horizontal","shift","ctrl","alt","showSummons","distance","overheadDebug","showCasualFollowers","hideDistantCasualFollowers","onlySeverCompanions"})
+    for (auto key : {"enabled","portraits","numbers","horizontal","shift","ctrl","alt","showSummons","distance","overheadDebug","showCasualFollowers","hideDistantCasualFollowers","onlySeverCompanions","excludeHorses"})
         if (input.contains(key) && input[key].is_boolean()) out[key] = input[key];
     for (auto [key, low, high] : std::initializer_list<std::tuple<const char*,double,double>>{
         {"x",0,0.98},{"y",0,0.98},{"scale",0.5,3},{"portraitSize",24,140},
@@ -179,13 +179,14 @@ bool IsActive(RE::Actor* actor, const std::set<RE::FormID>& following)
     const auto commander=actor->GetCommandingActor();
     const bool minion=actor->IsSummonedByPlayer() || (actor->IsCommandedActor() && commander.get()==player);
     auto flags = busy ? busy(actor->GetFormID()) : 0;
-    const PartyLight::FollowerOptions options{config.value("showCasualFollowers",false),config.value("hideDistantCasualFollowers",true),config.value("onlySeverCompanions",false),config.value("showSummons",false)};
+    const PartyLight::FollowerOptions options{config.value("showCasualFollowers",false),config.value("hideDistantCasualFollowers",true),config.value("onlySeverCompanions",false),config.value("showSummons",false),config.value("excludeHorses",true)};
     PartyLight::FollowerEvidence evidence{
         .severFlags=flags,
         .waiting=actor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kWaitingForPlayer)!=0.0f,
         .engineFollowingPlayer=following.contains(actor->GetFormID()),
         .playerTeammate=actor->IsPlayerTeammate(),
-        .playerMinion=minion
+        .playerMinion=minion,
+        .horse=actor->IsHorse()
     };
     if((flags&1u) && !(flags&1024u)) {
         auto* actorCell=actor->GetParentCell();auto* playerCell=player->GetParentCell();
@@ -222,9 +223,9 @@ bool IsActive(RE::Actor* actor, const std::set<RE::FormID>& following)
     if(candidate || previous!=followerObservations.end()) {
         if(previous==followerObservations.end() || previous->second!=observation) {
             const char* membership=(flags&1024u)?"sever-recruited":(flags&1u)?"sever-casual":"not-established-by-sever-api";
-            SKSE::log::info("Follower {}: {} [{:08X}]; state={} membership={} severFlags={} waiting={} engineLink={} liveFollowPackage={} teammate={} camp={} casualInRange={} package={:08X} packagePlugin={} packageType={} procedureType={} target={:08X}",
+            SKSE::log::info("Follower {}: {} [{:08X}]; state={} membership={} severFlags={} waiting={} engineLink={} liveFollowPackage={} teammate={} camp={} casualInRange={} horse={} package={:08X} packagePlugin={} packageType={} procedureType={} target={:08X}",
                 decision.included?"included":"excluded",actor->GetDisplayFullName(),actor->GetFormID(),PartyLight::FollowerStateName(decision.state),membership,evidence.severFlags,evidence.waiting,
-                evidence.engineFollowingPlayer,evidence.packageFollowingPlayer,evidence.playerTeammate,evidence.campSandbox,evidence.casualInRange,packageID,packagePlugin.empty()?"unknown":packagePlugin,packageType,procedureType,targetID);
+                evidence.engineFollowingPlayer,evidence.packageFollowingPlayer,evidence.playerTeammate,evidence.campSandbox,evidence.casualInRange,evidence.horse,packageID,packagePlugin.empty()?"unknown":packagePlugin,packageType,procedureType,targetID);
         }
         if(!candidate) followerObservations.erase(actor->GetFormID());
         else followerObservations.insert_or_assign(actor->GetFormID(),observation);
@@ -422,7 +423,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
             });
         }
     }).detach();
-    SKSE::log::info("PartyFrames Light 0.4.5 ready; runtime {}; settings hotkey scancode {} modifiers {}",REL::Module::IsVR()?"VR":"SE/AE",hotkey.load(),modifiers.load());
+    SKSE::log::info("PartyFrames Light 0.4.6 ready; runtime {}; settings hotkey scancode {} modifiers {}",REL::Module::IsVR()?"VR":"SE/AE",hotkey.load(),modifiers.load());
 }
 }
 SKSEPluginLoad(const SKSE::LoadInterface* skse)
