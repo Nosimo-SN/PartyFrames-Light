@@ -21,6 +21,7 @@ struct FollowerObservation {
     PartyLight::FollowerEvidence evidence;
     PartyLight::FollowerDecision decision;
     RE::FormID package{},target{};
+    std::int32_t packageType{-1},procedureType{-1};
     bool operator==(const FollowerObservation&) const = default;
 };
 std::map<RE::FormID,FollowerObservation> followerObservations;
@@ -33,6 +34,7 @@ using PortraitStampFn = std::uint64_t (*)(std::uint32_t);
 using ThemeFn = std::uint32_t (*)(char*,std::uint32_t);
 ThemeFn getTheme{};
 RE::TESPackage* campSandbox{};
+RE::TESPackage* suspiciousGuardObservation{};
 BusyFn busy{};
 PortraitPathFn portraitPath{};
 PortraitStampFn portraitStamp{};
@@ -193,30 +195,36 @@ bool IsActive(RE::Actor* actor, const std::set<RE::FormID>& following)
         evidence.casualInRange=PartyLight::IsCasualInRange(sharedSpace,actor->Is3DLoaded(),meters,config["casualFollowerRange"].get<float>());
     }
     RE::FormID packageID{},targetID{};
+    std::int32_t packageType=-1,procedureType=-1;
     std::string packagePlugin;
     auto* process = actor->GetActorRuntimeData().currentProcess;
     if (process) {
         RE::BSSpinLockGuard lock(process->currentPackage.packageLock);
         auto* package = process->currentPackage.package;
         packageID=package ? package->GetFormID():0;
+        evidence.excludedObservationPackage=suspiciousGuardObservation && package==suspiciousGuardObservation;
+        if(package) {
+            packageType=static_cast<std::int32_t>(package->packData.packType.underlying());
+            procedureType=static_cast<std::int32_t>(package->procedureType.underlying());
+        }
         if(package) if(auto* file=package->GetFile(0)) packagePlugin=file->fileName;
         evidence.campSandbox=campSandbox && package==campSandbox;
         const auto target = process->currentPackage.target.get();
         targetID=target ? target->GetFormID():0;
         if (package && target.get() == player &&
-            (package->packData.packType.any(RE::PACKAGE_TYPE::kFollow,RE::PACKAGE_TYPE::kEscort,RE::PACKAGE_TYPE::kAccompany) ||
-             package->procedureType.any(RE::PACKAGE_PROCEDURE_TYPE::kFollowWithEscort,RE::PACKAGE_PROCEDURE_TYPE::kFollowWithoutEscort,RE::PACKAGE_PROCEDURE_TYPE::kEscortActor,RE::PACKAGE_PROCEDURE_TYPE::kAccompany))) evidence.packageFollowingPlayer=true;
+            (PartyLight::EnumEqualsAny(package->packData.packType,RE::PACKAGE_TYPE::kFollow,RE::PACKAGE_TYPE::kEscort,RE::PACKAGE_TYPE::kAccompany) ||
+             PartyLight::EnumEqualsAny(package->procedureType,RE::PACKAGE_PROCEDURE_TYPE::kFollowWithEscort,RE::PACKAGE_PROCEDURE_TYPE::kFollowWithoutEscort,RE::PACKAGE_PROCEDURE_TYPE::kEscortActor,RE::PACKAGE_PROCEDURE_TYPE::kAccompany))) evidence.packageFollowingPlayer=true;
     }
     const auto decision=PartyLight::ClassifyFollower(evidence,options);
-    const FollowerObservation observation{evidence,decision,packageID,targetID};
+    const FollowerObservation observation{evidence,decision,packageID,targetID,packageType,procedureType};
     const auto previous=followerObservations.find(actor->GetFormID());
-    const bool candidate=flags&1025u || evidence.engineFollowingPlayer || evidence.packageFollowingPlayer || evidence.playerTeammate || evidence.campSandbox || minion;
+    const bool candidate=flags&1025u || evidence.engineFollowingPlayer || evidence.packageFollowingPlayer || evidence.playerTeammate || evidence.campSandbox || minion || evidence.excludedObservationPackage;
     if(candidate || previous!=followerObservations.end()) {
         if(previous==followerObservations.end() || previous->second!=observation) {
             const char* membership=(flags&1024u)?"sever-recruited":(flags&1u)?"sever-casual":"not-established-by-sever-api";
-            SKSE::log::info("Follower {}: {} [{:08X}]; state={} membership={} severFlags={} waiting={} engineLink={} liveFollowPackage={} teammate={} camp={} casualInRange={} package={:08X} packagePlugin={} target={:08X}",
+            SKSE::log::info("Follower {}: {} [{:08X}]; state={} membership={} severFlags={} waiting={} engineLink={} liveFollowPackage={} teammate={} camp={} casualInRange={} package={:08X} packagePlugin={} packageType={} procedureType={} target={:08X}",
                 decision.included?"included":"excluded",actor->GetDisplayFullName(),actor->GetFormID(),PartyLight::FollowerStateName(decision.state),membership,evidence.severFlags,evidence.waiting,
-                evidence.engineFollowingPlayer,evidence.packageFollowingPlayer,evidence.playerTeammate,evidence.campSandbox,evidence.casualInRange,packageID,packagePlugin.empty()?"unknown":packagePlugin,targetID);
+                evidence.engineFollowingPlayer,evidence.packageFollowingPlayer,evidence.playerTeammate,evidence.campSandbox,evidence.casualInRange,packageID,packagePlugin.empty()?"unknown":packagePlugin,packageType,procedureType,targetID);
         }
         if(!candidate) followerObservations.erase(actor->GetFormID());
         else followerObservations.insert_or_assign(actor->GetFormID(),observation);
@@ -385,6 +393,8 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
     SKSE::log::info("SeverActions API {}; portraits {}",version ? version():0,portraitPath && portraitStamp);
     if(auto* data=RE::TESDataHandler::GetSingleton()) campSandbox=data->LookupForm<RE::TESPackage>(0x801,"SeversHearth.esp");
     SKSE::log::info("Sever's Hearth camp package: {:08X}",campSandbox ? campSandbox->GetFormID():0);
+    if(auto* data=RE::TESDataHandler::GetSingleton()) suspiciousGuardObservation=data->LookupForm<RE::TESPackage>(0x12CC,"suspiciouscityguards.esp");
+    SKSE::log::info("Suspicious City Guards observation exclusion: {:08X} (0012CC:suspiciouscityguards.esp; optional)",suspiciousGuardObservation?suspiciousGuardObservation->GetFormID():0);
     PartyLight::InitializeCanine();
     auto base = DataPath()/L"Magelight"/L"PartyLight"/L"views";
     hud=mod.createView("hud",Utf8(base/L"hud"/L"index.html").c_str(),ML::Layer::Hud,{.fullscreen=true,.clickThrough=true,.onDomReady=OnReady});
@@ -412,7 +422,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
             });
         }
     }).detach();
-    SKSE::log::info("PartyFrames Light 0.4.4 ready; runtime {}; settings hotkey scancode {} modifiers {}",REL::Module::IsVR()?"VR":"SE/AE",hotkey.load(),modifiers.load());
+    SKSE::log::info("PartyFrames Light 0.4.5 ready; runtime {}; settings hotkey scancode {} modifiers {}",REL::Module::IsVR()?"VR":"SE/AE",hotkey.load(),modifiers.load());
 }
 }
 SKSEPluginLoad(const SKSE::LoadInterface* skse)

@@ -66,6 +66,8 @@ The developer's SE/AE game has exercised portraits, active follower filtering, c
 
 If a frame is missing, confirm the actor is actively following or using the supported camp package. Waiting/home-rostered companions are intentionally excluded. Check row/column limits and the summons toggle. Another interior/worldspace displays **Elsewhere** because coordinates cannot be compared reliably.
 
+Suspicious City Guards compatibility: while an actor is running `SCGobservePack` (`0012CC:suspiciouscityguards.esp`), it is excluded as a surveillance task. Other packages and guards are not blacklisted. The optional plugin is resolved by name and local FormID; no load-index assumptions or changes to that mod are made. Version 0.4.5 also corrects package/procedure checks to compare numbered enum values exactly rather than as bitmasks. Engine follow links and genuine follow procedures alone still cannot universally prove recruitment, so other mods using follow for surveillance may need a specific compatibility rule. Companions-only mode is the existing stricter choice. All three native suites pass; 0.4.5 still needs in-game testing.
+
 For a bug report, include your Skyrim and SKSE versions, integration versions, steps to reproduce, and `Documents/My Games/Skyrim Special Edition/SKSE/PartyLight.log`. Avoid posting private data from unrelated logs.
 
 ## Build

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.5 — surveillance package compatibility and exact package checks
+
+- Excludes `0012CC:suspiciouscityguards.esp` (`SCGobservePack`) while it is the actor's current package. The observation quest assigns this player-targeted follow/watch task to its Observer alias; this is not recruitment. The exclusion precedes engine/package admission, so the reported guard's engine link cannot bypass it. Other packages on the same actor remain eligible normally.
+- Resolves the optional package through TESDataHandler by plugin/local FormID, independent of load index. The mod need not be installed or active and is not enabled or modified.
+- Fixes a broader classifier bug: package and procedure types are numbered enums despite CommonLib storing them in EnumSet. Bitmask `any()` treated overlapping numbers (including dialogue/observation and generic Package values) as follow types. Checks now use exact equality for Follow/Escort/Accompany types and procedures.
+- State logs include raw package/procedure type numbers and an explicit SCG observation exclusion reason. Initialization logs whether the optional package resolved.
+- All three native regression suites pass. Coverage uses CommonLib's actual EnumSet wrapper across all current package/procedure numbers and reproduces the reported guard signals. Live-game testing remains pending.
+- True follow procedures and engine links are still shared by companions and some surveillance/approach tasks. This change does not claim universal detection of recruitment. Companions-only mode remains the existing stricter option; unknown packages need evidence-based compatibility rules.
+
 ## 0.4.4 — casual follow exclusion and state diagnostics
 
 - SeverActions casual followers (`1` without recruited-roster bit `1024`) default off. A new setting enables them, with a default-on distance limit of 100 metres adjustable from 10 to 500 m. Unknown space and unloaded casuals are outside range. Turning the range limit off allows them at any distance.

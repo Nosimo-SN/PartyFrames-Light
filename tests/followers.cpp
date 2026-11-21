@@ -3,6 +3,10 @@
 #include <iostream>
 #include <stdexcept>
 #include <limits>
+#include <compare>
+#include <concepts>
+#include <type_traits>
+#include <REX/REX/EnumSet.h>
 using PartyLight::FollowerEvidence;
 using PartyLight::IsActivelyFollowing;
 void Check(FollowerEvidence evidence, bool expected, const char* label)
@@ -11,6 +15,28 @@ void Check(FollowerEvidence evidence, bool expected, const char* label)
 }
 int main()
 {
+    // Reproduce the actual CommonLib storage wrapper and its overlapping enum
+    // values: bitmask matching admitted e.g. Dialogue=15 and KeepAnEyeOn=48.
+    enum class PackageKind : unsigned {Follow=1,Escort=2,Accompany=7,Dialogue=15,Package=18};
+    enum class ProcedureKind : unsigned {FollowEscort=6,Escort=8,Accompany=25,Follow=43,Observe=48};
+    for(unsigned value=0;value<44;++value) {
+        REX::EnumSet<PackageKind> kind=static_cast<PackageKind>(value);
+        if(PartyLight::EnumEqualsAny(kind,PackageKind::Follow,PackageKind::Escort,PackageKind::Accompany)!=(value==1 || value==2 || value==7))
+            throw std::runtime_error("Package classification must use exact enum values");
+    }
+    for(unsigned value=0;value<49;++value) {
+        REX::EnumSet<ProcedureKind> kind=static_cast<ProcedureKind>(value);
+        if(PartyLight::EnumEqualsAny(kind,ProcedureKind::FollowEscort,ProcedureKind::Escort,ProcedureKind::Accompany,ProcedureKind::Follow)!=(value==6 || value==8 || value==25 || value==43))
+            throw std::runtime_error("Procedure classification must not mistake observation or dialogue for follow");
+    }
+    FollowerEvidence observer{.engineFollowingPlayer=true,.packageFollowingPlayer=true,.excludedObservationPackage=true};
+    Check(observer,false,"Reported SCG observer must not qualify through either live follow signal");
+    if(PartyLight::ClassifyFollower(observer).state!=PartyLight::FollowerState::KnownObservationPackage)
+        throw std::runtime_error("Observation exclusion must have an explicit diagnostic reason");
+    observer.severFlags=1025;observer.playerTeammate=true;
+    Check(observer,false,"Known surveillance task vetoes other admission paths");
+    observer.excludedObservationPackage=false;
+    Check(observer,true,"Same recruited actor remains eligible outside the observation task");
     Check({},false,"Nearby NPC is not a follower");
     Check({.severFlags=1024},false,"Sever roster alone must not qualify");
     Check({.severFlags=1024,.playerTeammate=true},false,"Home roster companion retaining teammate/faction state must not qualify");
